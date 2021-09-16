@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: game-scrabble-backend-dev
+spec:
+    ports:
+        - port: 80
+          targetPort: 80
+    selector:
+        app: game-scrabble-backend-dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: game-scrabble-backend-dev
+spec:
+    selector:
+        matchLabels:
+            app: game-scrabble-backend-dev
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: game-scrabble-backend-dev
+        spec:
+            containers:
+                - name: game-scrabble-backend-dev
+                  image: registry.gitlab.com/enlighten1/capgemini-capmania/scrabble-backend:latest-development
+                  imagePullPolicy: Always
+                  ports:
+                      - containerPort: 80
+                  env:
+                      - name: TZ
+                        value: Europe/Warsaw
+                  resources:
+                      requests:
+                          memory: '40Mi'
+                          cpu: '20m'
+                      limits:
+                          memory: '100Mi'
+                          cpu: '100m'
+            imagePullSecrets:
+                - name: regcred
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+    name: game-scrabble-backend-dev-ingress
+    annotations:
+        kubernetes.io/ingress.class: nginx
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+    tls:
+        - hosts:
+              - scrabble-backend-dev.capgemini.enl-projects.com
+          secretName: game-scrabble-backend-dev-tls
+    rules:
+        - host: scrabble-backend-dev.capgemini.enl-projects.com
+          http:
+              paths:
+                  - backend:
+                        serviceName: game-scrabble-backend-dev
+                        servicePort: 80
