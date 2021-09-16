@@ -9,3 +9,13 @@ build-development:
         - docker push $CI_REGISTRY_IMAGE:latest-development
     only:
         - main
+
+deploy-development:
+    image:
+        name: bitnami/kubectl
+        entrypoint: ['']
+    stage: deploy
+    script:
+        - kubectl rollout restart deployment game-scrabble-backend-dev --namespace=capgemini
+    only:
+        - main
