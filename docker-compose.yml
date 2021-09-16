@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  scrabble:
+    build:
+     context: ./
+     dockerfile: ./Dockerfile
+    environment:
+     MAX_WORKERS: 1
+     WEB_CONCURRENCY: 1
+    ports:
+     - "5000:80"
+    restart: always

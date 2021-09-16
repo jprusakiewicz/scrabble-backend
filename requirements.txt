@@ -1,0 +1,9 @@
+python-multipart
+uvicorn
+fastapi
+requests
+pydantic
+requests
+chardet
+fuzzywuzzy
+python-Levenshtein==0.12.0
