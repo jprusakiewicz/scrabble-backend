@@ -15,7 +15,7 @@ from .server_errors import ItsNotYourTurn
 
 
 class Room:
-    def __init__(self, room_id, number_of_players=4):
+    def __init__(self, room_id, number_of_players=2):
         self.winners = []  # !use normal id!
         self.id = room_id
         self.active_connections: List[Connection] = []
@@ -31,7 +31,7 @@ class Room:
         try:
             timeout = float(os.path.join(os.getenv('TIMEOUT_SECONDS')))
         except TypeError:
-            timeout = 15  # if theres no env var
+            timeout = 55  # if theres no env var
         return timeout
 
     def next_person_async(self):
@@ -39,7 +39,7 @@ class Room:
         asyncio.run(self.broadcast_json())
 
     async def append_connection(self, connection):
-        connection.player.game_id = self.get_free_color()
+        connection.player.game_id = self.get_free_player_game_id()
         self.active_connections.append(connection)
         self.export_room_status()
         if len(self.active_connections) >= self.number_of_players and self.is_game_on is False:
@@ -89,7 +89,7 @@ class Room:
         self.winners = []
         self.whos_turn = self.draw_random_player_id()
         self.put_all_players_in_game()
-        self.game = Game(self.get_players_in_game_game_ids())
+        self.game = Game(len(self.get_players_in_game_ids()))
         self.game_id = str(uuid.uuid4().hex)
         self.restart_timer()
         await self.broadcast_json()
@@ -121,11 +121,15 @@ class Room:
 
             await self.broadcast_json()
 
+    def get_players_in_game_ids(self) -> List[str]:
+        taken_ids = [connection.player.game_id for connection in self.active_connections if
+                     connection.player.in_game == True]
+        return taken_ids
+
     async def remove_player_by_id(self, id):
         player = next(
             connection.player for connection in self.active_connections if connection.player.id == id)
         if self.game is not None:
-            # self.game.remove_players_counters_from_regular_and_idle_fields(player.game_id)
             if self.whos_turn == player.game_id:
                 await self.next_person_move()
             player.in_game = False
@@ -169,14 +173,15 @@ class Room:
         if self.is_game_on:
             player = next(
                 connection.player for connection in self.active_connections if connection.player.id == client_id)
-            game_state = dict(is_game_on=self.is_game_on, my_color=player.game_id,
-                              turn_id=self.game.turn_id,
-                              whos_turn=str(self.whos_turn),
-                              game_data=self.game.get_current_state(), nicks=self.get_nicks(),
-                              timestamp=self.timestamp.isoformat())
+            game_state = dict(is_game_on=self.is_game_on,
+                              # turn_id=self.game.turn_id,
+                              board=self.game.get_board(), nicks=self.get_nicks(),
+                              player_hand=self.game.get_player_hand(player.game_id),
+                              timestamp=self.timestamp.isoformat(), is_my_turn=self.is_my_turn(player.game_id))
         else:
             game_state = dict(is_game_on=self.is_game_on, nicks=self.get_nicks())
 
+        print(game_state)
         return json.dumps(game_state)
 
     def draw_random_player_id(self):
@@ -188,6 +193,7 @@ class Room:
             stats = {'is_game_on': self.is_game_on,
                      "whos turn": self.whos_turn,
                      'number_of_players': self.number_of_players,
+                     'results': self.game.players,
                      "number_of_connected_players": len(self.active_connections)}
         else:
             stats = {'is_game_on': self.is_game_on,
@@ -201,11 +207,13 @@ class Room:
             for connection in self.active_connections:
                 if connection.player.in_game is True:
                     enemy_color = connection.player.game_id
-                    nicks[enemy_color] = connection.player.nick
+                    nicks[enemy_color] = dict(nick=connection.player.nick,
+                                              has_turn=self.is_my_turn(connection.player.game_id),
+                                              score=self.game.get_score(connection.player.game_id))  # todo
         else:
             for connection in self.active_connections[:self.number_of_players]:
                 enemy_color = connection.player.game_id
-                nicks[enemy_color] = connection.player.nick
+                nicks[enemy_color] = dict(nick=connection.player.nick, has_turn=False, score=0)
         return nicks
 
     def validate_its_players_turn(self, player_id):
@@ -226,7 +234,7 @@ class Room:
 
     def export_score(self):
         try:
-            result = requests.post(url=os.path.join(os.getenv('EXPORT_RESULTS_URL'), "games/handle-results/chinczyk"),
+            result = requests.post(url=os.path.join(os.getenv('EXPORT_RESULTS_URL'), "games/handle-results/scrabble"),
                                    json=dict(roomId=self.id, results=self.winners))
             if result.status_code == 200:
                 print("export succesfull")
@@ -245,9 +253,10 @@ class Room:
                         is_in_game.append(player.player.id)
             else:
                 is_in_game = self.get_taken_ids()
+            print(dict(activePlayers=is_in_game))
             result = requests.post(
                 url=os.path.join(os.getenv('EXPORT_RESULTS_URL'), "rooms/update-room-status"),
-                json=dict(roomId=self.id, currentResults=self.winners, activePlayers=is_in_game))
+                json=dict(roomId=self.id, activePlayers=is_in_game))
 
             if result.status_code == 200:
                 print("export succesfull")
@@ -263,3 +272,19 @@ class Room:
         self.timer = threading.Timer(self.timeout, self.next_person_async)
         self.timer.start()
         self.timestamp = datetime.now() + timedelta(0, self.timeout)
+
+    def get_free_player_game_id(self):
+        taken_ids = self.get_taken_game_ids()
+        for i in range(1, 5):
+            if str(i) not in taken_ids:
+                print("free id: ", i)
+                return str(i)
+
+    def is_my_turn(self, game_id):
+        return game_id == self.whos_turn
+
+    def get_free_game_id(self):
+        taken_ids = self.get_taken_ids()
+        for i in range(1, 5):
+            if str(i) not in taken_ids:
+                return str(i)

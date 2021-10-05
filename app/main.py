@@ -188,7 +188,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         board=[{'x': 7, 'y': 5, 'letter': 'K'}, {'x': 7, 'y': 6, 'letter': 'L'},
                                {'x': 7, 'y': 7, 'letter': 'U'}, {'x': 7, 'y': 8, 'letter': 'S'},
                                {'x': 7, 'y': 9, 'letter': 'K'}, {'x': 7, 'y': 10, 'letter': 'A'}],
-                        player_hand=['A', 'P', 'H', 'K', 'L', 'Q', 'P'], timestamp=time.isoformat(), whos_turn="1",
+                        player_hand=['A', 'P', 'H', 'K', 'L', 'Q', 'P'], timestamp=time.isoformat(),
                         is_my_turn=True)
     try:
         while True:

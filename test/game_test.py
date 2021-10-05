@@ -1,28 +1,28 @@
 import unittest
 
-from app.card import Color
-from app.game import Game
+from app.game import Game, get_new_letters
 
 
 class TestGame(unittest.TestCase):
-    def test_calling_collor(self):
-        # given
-        game = Game(2)
-        collor_call = "Hearts"
-        # when
-        game.handle_ace(collor_call)
-        # then
-        self.assertEqual(Color.Hearts, game.color_call)  # add assertion here
+    def test_getting_new_letters(self):
+        letters = get_new_letters()
+        self.assertEqual(98, len(letters))
 
-    def test_getting_call(self):
-        # given
-        game = Game(2)
-        collor_call = "Hearts"
-        game.color_call = collor_call
+    def test_creating_game_object(self):
         # when
-        call = game.get_call()
+        game = Game(4)
+        players = game.players
         # then
-        self.assertEqual(collor_call, call)  # add assertion here
+        self.assertEqual(7, len(players[0]))
+        self.assertEqual(7, len(players[1]))
+        self.assertEqual(7, len(players[2]))
+        self.assertEqual(7, len(players[3]))
+        self.assertEqual(70, len(game.bag))
+        self.assertNotEqual(players[0], players[1])
+        self.assertNotEqual(players[1], players[2])
+        self.assertNotEqual(players[2], players[3])
+        self.assertNotEqual(players[2], players[0])
+        self.assertNotEqual(players[1], players[3])
 
 
 if __name__ == '__main__':

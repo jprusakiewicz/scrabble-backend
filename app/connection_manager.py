@@ -60,7 +60,6 @@ class ConnectionManager:
     async def kick_player(self, room_id, player_id):
         room = self.get_room(room_id)
         await room.kick_player(player_id)
-        await self.broadcast(room_id)
 
     async def handle_ws_message(self, message, room_id, client_id):
         try:
