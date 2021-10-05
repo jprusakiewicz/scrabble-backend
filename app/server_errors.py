@@ -31,3 +31,8 @@ class GameIsStarted(WsServerError):
 class ItsNotYourTurn(WsServerError):
     def __init__(self):
         self.message = 'Its not your turn!'
+
+
+class ToManyPlayers(WsServerError):
+    def __init__(self):
+        self.message = 'Max number of players is 4!'

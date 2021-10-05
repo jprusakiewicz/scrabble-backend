@@ -1,4 +1,4 @@
-# Scrabble game server
+# scrabble-backend
 
 #### Python based server for multiplayer gameplay to be used with any API based frontend.
 

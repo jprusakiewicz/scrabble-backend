@@ -5,7 +5,7 @@ from starlette.websockets import WebSocket
 from app.connection import Connection
 from app.player import Player
 from app.room import Room
-from app.server_errors import PlayerIdAlreadyInUse, NoRoomWithThisId, RoomIdAlreadyInUse, ItsNotYourTurn
+from app.server_errors import PlayerIdAlreadyInUse, NoRoomWithThisId, RoomIdAlreadyInUse, ItsNotYourTurn, ToManyPlayers
 
 
 class ConnectionManager:
@@ -99,13 +99,14 @@ class ConnectionManager:
         return {'rooms_count': len(self.rooms),
                 'rooms_ids': [r.id for r in self.rooms]}
 
-    async def create_new_room(self, room_id):
+    async def create_new_room(self, room_id, number_of_players: int = 4):
+        if number_of_players > 4:
+            raise ToManyPlayers
         if room_id not in [room.id for room in self.rooms]:
-            self.rooms.append(Room(room_id=room_id))
+            self.rooms.append(Room(room_id=room_id, number_of_players=number_of_players))
         else:
             raise RoomIdAlreadyInUse
 
     async def delete_room(self, room_id):
         room = self.get_room(room_id)
         self.rooms.remove(room)
-

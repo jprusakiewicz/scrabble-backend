@@ -1,13 +1,15 @@
 import logging
+from datetime import datetime, timedelta
 from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from starlette.responses import JSONResponse
+from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK
 
 from app.connection_manager import ConnectionManager
-from app.server_errors import GameIsStarted, PlayerIdAlreadyInUse, NoRoomWithThisId, RoomIdAlreadyInUse
+from app.server_errors import GameIsStarted, PlayerIdAlreadyInUse, NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers
 
 app = FastAPI()
 
@@ -19,7 +21,7 @@ async def get():
     return {"status": "ok"}
 
 
-@app.get("/stats/")
+@app.get("/stats")
 async def get_stats(room_id: Optional[str] = None):
     if room_id:
         try:
@@ -33,8 +35,7 @@ async def get_stats(room_id: Optional[str] = None):
 
 
 @app.post("/room/new/{room_id}")
-async def end_game(room_id: str):
-    number_players: int = 4
+async def new_room(room_id: str):
     try:
         await manager.create_new_room(room_id)
         return JSONResponse(
@@ -50,9 +51,9 @@ async def end_game(room_id: str):
 
 
 @app.post("/room/new/{room_id}/{number_players}")
-async def end_game(room_id: str, number_players: int):
+async def new_room(room_id: str, number_players: int):
     try:
-        await manager.create_new_room(room_id)
+        await manager.create_new_room(room_id, number_players)
         return JSONResponse(
             status_code=200,
             content={"detail": "success"}
@@ -62,6 +63,11 @@ async def end_game(room_id: str, number_players: int):
         return JSONResponse(
             status_code=403,
             content={"detail": "Theres already a room with this id: {room_id}"}
+        )
+    except ToManyPlayers:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Max number of players is 4!"}
         )
 
 
@@ -171,44 +177,29 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: str,
         logging.info("disconnected!")
 
 
-#
-# @app.websocket("/test/{room_id}/{client_id}")
-# async def websocket_endpoint(websocket: WebSocket):
-#     json_to_send = {"is_game_on": True,
-#                     "whos_turn": "Red",
-#                     "nicks": {"Red": "Zbyszek",
-#                               "Green": "Marcin",
-#                               "Blue": "Michał",
-#                               "Yellow": "Łukasz"},
-#                     "dice": 1,
-#                     "game_data": {
-#                         "regular": {
-#                             "Red": [1, 4, 7],
-#                             "Green": [1, 4, 9],
-#                             "Blue": [1],
-#                             "Yellow": [1]},
-#                         "finnish": {
-#                             "Red": [],
-#                             "Green": [1],
-#                             "Blue": [1, 2],
-#                             "Yellow": [1, 4]},
-#                         "idle": {
-#                             "Red": 4,
-#                             "Green": 4,
-#                             "Blue": 4,
-#                             "Yellow": 4}
-#                     }}
-#     try:
-#         while True:
-#             ws = websocket
-#             await ws.accept()
-#
-#             await websocket.send_json(json_to_send)
-#             message = await websocket.receive()
-#
-#
-#     except WebSocketDisconnect:
-#         logging.info("disconnected")
+@app.websocket("/test/{room_id}/{client_id}/{nick}")
+async def websocket_endpoint(websocket: WebSocket):
+    time = datetime.now() + timedelta(0, 25)
+    json_to_send = dict(is_game_on=False)
+    json_to_send = dict(is_game_on=True, nicks={"1": {'nick': "kuba", "has_turn": True, "score": 4},
+                                                "2": {'nick': "Michał", "has_turn": False, "score": 22},
+                                                "3": {'nick': "Maciek", "has_turn": False, "score": 2137},
+                                                "4": {'nick': "Łukasz", "has_turn": False, "score": 5555}},
+                        board=[{'x': 7, 'y': 5, 'letter': 'K'}, {'x': 7, 'y': 6, 'letter': 'L'},
+                               {'x': 7, 'y': 7, 'letter': 'U'}, {'x': 7, 'y': 8, 'letter': 'S'},
+                               {'x': 7, 'y': 9, 'letter': 'K'}, {'x': 7, 'y': 10, 'letter': 'A'}],
+                        player_hand=['A', 'P', 'H', 'K', 'L', 'Q', 'P'], timestamp=time.isoformat(), whos_turn="1",
+                        is_my_turn=True)
+    try:
+        while True:
+            ws = websocket
+            await ws.accept()
+
+            await websocket.send_json(json_to_send)
+            message = await websocket.receive()
+
+    except WebSocketDisconnect:
+        logging.info("disconnected")
 
 
 if __name__ == "__main__":
