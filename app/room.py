@@ -62,6 +62,10 @@ class Room:
                    connection.player.in_game is True]
         return players
 
+    def get_players_regular_ids(self):
+        players = [connection.player.id for connection in self.active_connections]
+        return players
+
     async def remove_connection(self, connection_with_given_ws):
         await self.remove_player_by_id(connection_with_given_ws.player.id)
         self.active_connections.remove(connection_with_given_ws)
@@ -193,12 +197,12 @@ class Room:
                      "whos turn": self.whos_turn,
                      'number_of_players': self.number_of_players,
                      'results': self.game.players,
-                     'players_ids': [self.get_players_in_game_regular_ids()],
+                     'players_ids': [self.get_players_regular_ids()],
                      "number_of_connected_players": len(self.active_connections)}
         else:
             stats = {'is_game_on': self.is_game_on,
                      'number_of_players': self.number_of_players,
-                     'players_ids': [self.get_players_in_game_regular_ids()],
+                     'players_ids': [self.get_players_regular_ids()],
                      "number_of_connected_players": len(self.active_connections)}
         return stats
 
