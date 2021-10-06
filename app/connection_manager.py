@@ -57,6 +57,15 @@ class ConnectionManager:
             except RuntimeError:
                 await self.kick_player(room_id, connection.player.id)
 
+    async def refresh(self, player_id, room_id):
+        room = self.get_room(room_id)
+        for connection in room.active_connections:
+            if connection.player.id == player_id:
+                try:
+                    await connection.ws.send_text(room.get_game_state(connection.player.id))
+                except RuntimeError:
+                    await self.kick_player(room_id, connection.player.id)
+
     async def kick_player(self, room_id, player_id):
         room = self.get_room(room_id)
         await room.kick_player(player_id)
@@ -67,17 +76,15 @@ class ConnectionManager:
             players_move = json.loads(message["text"])
             room = self.get_room(room_id)
             await room.handle_players_move(client_id, players_move)
-        except KeyError:
-            print("handle message")
-            pass
+            await self.broadcast(room_id)
+
+        # except KeyError:
+        #     print("handle message")
+        #     pass
         except ItsNotYourTurn as e:
             # send message to this player
             print(e)
-        # except YouDontHaveThisCardOnYourHand as e:
-        #     ...
-        # except YouCantMakeThisMove as e:
-        #     ...
-        await self.broadcast(room_id)
+            await self.refresh(client_id, room_id)
 
     def get_active_connection(self, websocket: WebSocket):
         for r in self.rooms:

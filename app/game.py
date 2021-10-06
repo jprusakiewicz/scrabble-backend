@@ -51,6 +51,7 @@ class Game:
         self.bag: List[str] = get_new_letters()
         self.players: dict = self.get_new_game_tiles(number_of_players)
         self.score = self.setup_score(number_of_players)
+        self.words = self.read_words()
 
     def get_new_game_tiles(self, number_of_players: int):
         players = {}
@@ -61,10 +62,16 @@ class Game:
 
     def handle_players_move(self, game_id, player_move: Union[dict, List[dict]]) -> bool:
         if 'other' in player_move:
-            print("other")
+            if player_move['other'] == "refresh":
+                pass
+            elif player_move['other'] == "skip":
+                letter = player_move['letter']
+                self.replace_letter(game_id, letter)
+                return True
+            return False
         else:
-            self.handle_player_tiles(game_id, player_move)
-            return True
+            next_player = self.handle_player_tiles(game_id, player_move)
+            return next_player
 
     def get_board(self):
         return [f.__dict__ for f in self.board.fields]
@@ -73,9 +80,12 @@ class Game:
         return self.players[game_id]
 
     def handle_player_tiles(self, game_id, player_move):
-        self.board.add_tiles(player_move)
-        self.score[game_id] += self.board.get_score(player_move)
-        self.handle_players_hand(game_id, player_move)
+        if self.validate_move(game_id, player_move):
+            self.board.add_tiles(player_move)
+            self.score[game_id] += self.board.get_score(player_move)
+            self.handle_players_hand(game_id, player_move)
+            return True
+        return False
 
     def setup_score(self, number_of_players: int):
         return {str(n + 1): 0 for n in range(number_of_players)}
@@ -85,13 +95,159 @@ class Game:
 
     def handle_players_hand(self, game_id, player_move):
         for tile in player_move:
-            self.players[game_id].remove(tile["letter"])
+            try:
+                self.players[game_id].remove(tile["letter"])
+            except ValueError:
+                pass
         tiles_in_hand_number = len(self.players[game_id])
         if tiles_in_hand_number < 7:
             tiles_to_get_number = 7 - tiles_in_hand_number
-            self.players[game_id].extend(self.get_new_cards(tiles_to_get_number))
+            self.players[game_id].extend(self.get_new_tiles(tiles_to_get_number))
 
-    def get_new_cards(self, tiles_to_get_number):
+    def get_new_tiles(self, tiles_to_get_number):
         tiles_to_get = self.bag[-tiles_to_get_number:]
         self.bag = self.bag[:-tiles_to_get_number]
         return tiles_to_get
+
+    def get_orientation(self, player_move):
+        if len(player_move) == 1:
+            surroundings = self.get_surroundings(player_move['x'], player_move['y'])
+            if len(surroundings) == 1:
+                player_move.extend(surroundings)
+            else:
+                return None
+
+        xs = [tile["x"] for tile in player_move]
+        ys = [tile["y"] for tile in player_move]
+
+        if len(xs) > 1 and len(set(xs)) == 1:
+            return 'y'
+        elif len(ys) > 1 and len(set(ys)) == 1:
+            return 'x'
+        else:
+            return None
+
+    def validate_move(self, game_id, player_move):
+        try:
+            if self.board.is_empty():
+                if not self.is_first_or_last_on_center(player_move):
+                    return False
+
+            orientation = self.get_orientation(player_move)
+            if orientation is not None:
+                if self.validate_continuum(player_move, orientation):
+                    self.append_extreme_tiles(player_move, orientation)
+                    if self.validate_tiles_position(player_move, orientation):
+                        if self.validate_word(player_move):
+                            return True
+            return False
+
+        except RecursionError:
+            return False
+
+    def validate_continuum(self, player_move, orientation):
+        indices = [tile[orientation] for tile in player_move]
+        start_idx = min(indices)
+        end_idx = max(indices)
+        for i in range(start_idx, end_idx):
+            if i not in indices:
+                if orientation == 'x':
+                    field = self.board.get_field(i, player_move[0]["y"])
+                    if field is not None:
+                        player_move.append({"x": field.x, "y": field.y, "letter": field.letter})
+                    else:
+                        return False
+                elif orientation == 'y':
+                    field = self.board.get_field(player_move[0]["x"], i)
+                    if field is not None:
+                        player_move.append({"x": field.x, "y": field.y, "letter": field.letter})
+                    else:
+                        return False
+        return True
+
+    def validate_tiles_position(self, players_move, orientation):
+        if orientation == 'x':
+            opposite_orientation = 'y'
+        else:
+            opposite_orientation = 'x'
+        for tile in players_move:
+            if not self.board.is_in_board(tile):
+                new_word = [tile]
+                self.append_extreme_tiles(new_word, opposite_orientation)
+                if len(new_word) > 1:
+                    print("new word: ", new_word)
+                    if self.validate_word(new_word) is not True:
+                        return False
+        return True
+
+    def get_surroundings(self, x, y):
+        surroundings = []
+
+        surroundings.append(self.board.get_field(x - 1, y))
+        surroundings.append(self.board.get_field(x + 1, y))
+        surroundings.append(self.board.get_field(x, y - 1))
+        surroundings.append(self.board.get_field(x, y + 1))
+
+        surroundings = list(filter(None, surroundings))
+        surroundings = [s.__dict__ for s in surroundings]
+        return surroundings
+
+    def get_oriented_surrounding(self, x, y, orientation: str):
+        surroundings = []
+        if orientation == 'x':
+            surroundings.append(self.board.get_field(x - 1, y))
+            surroundings.append(self.board.get_field(x + 1, y))
+        elif orientation == 'y':
+            surroundings.append(self.board.get_field(x, y - 1))
+            surroundings.append(self.board.get_field(x, y + 1))
+
+        surroundings = list(filter(None, surroundings))
+        if any(surroundings):
+            return surroundings[0]
+
+    def append_extreme_top_tiles(self, player_move, orientation):
+        player_move.sort(key=lambda l: l[orientation])
+        first_tile = player_move[0]
+
+        new = self.get_oriented_surrounding(first_tile['x'], first_tile['y'], orientation)
+        if new is not None and {"x": new.x, "y": new.y, "letter": new.letter} not in player_move:
+            player_move.append({"x": new.x, "y": new.y, "letter": new.letter})
+            player_move.sort(key=lambda l: l[orientation])
+            self.append_extreme_top_tiles(player_move, orientation)
+
+    def append_extreme_bottom_tiles(self, player_move, orientation):
+        player_move.sort(key=lambda l: l[orientation])
+        last = player_move[-1]
+
+        new = self.get_oriented_surrounding(last['x'], last['y'], orientation)
+        if new is not None and {"x": new.x, "y": new.y, "letter": new.letter} not in player_move:
+            player_move.append({"x": new.x, "y": new.y, "letter": new.letter})
+            player_move.sort(key=lambda l: l[orientation])
+            self.append_extreme_top_tiles(player_move, orientation)
+
+    def append_extreme_tiles(self, player_move, orientation):
+        self.append_extreme_top_tiles(player_move, orientation)
+        self.append_extreme_bottom_tiles(player_move, orientation)
+
+    def validate_word(self, player_move):
+        word = "".join([w["letter"] for w in player_move]).lower()
+        if word in self.words:
+            return True
+        else:
+            print(f"theres no {word} in words")
+
+    def read_words(self):
+        with open('slowa.txt') as f:
+            words = f.read().split('\n')
+        return words
+
+    def is_first_or_last_on_center(self, player_move):
+        for tile in player_move:
+            if tile['x'] == 8 and tile['y'] == 8:
+                return True
+        return False
+
+    def replace_letter(self, game_id, letter):
+        idx = self.players[game_id].index(letter)
+        self.players[game_id][idx] = self.bag[-1]
+        self.bag[-1] = letter

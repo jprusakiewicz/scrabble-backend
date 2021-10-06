@@ -24,6 +24,28 @@ class TestGame(unittest.TestCase):
         self.assertNotEqual(players[2], players[0])
         self.assertNotEqual(players[1], players[3])
 
+    def test_getting_orientation(self):
+        # given
+        positive_tiles_1 = [{'x': 1, 'y': 1}, {'x': 1, 'y': 2}, {'x': 1, 'y': 3}, {'x': 1, 'y': 4}]
+        positive_tiles_2 = [{'x': 1, 'y': 1}, {'x': 2, 'y': 1}, {'x': 3, 'y': 1}, {'x': 4, 'y': 1}]
+        positive_tiles_3 = [{'x': 1, 'y': 1}, {'x': 2, 'y': 1}]
+
+        nevative_tiles_1 = [{'x': 1, 'y': 2}, {'x': 2, 'y': 1}]
+        nevative_tiles_2 = [{'x': 1, 'y': 2}, {'x': 2, 'y': 1}, {'x': 1, 'y': 3}, {'x': 1, 'y': 4}]
+        nevative_tiles_3 = [{'x': 1, 'y': 2}]
+        nevative_tiles_4 = [{'x': 1, 'y': 1}]
+        nevative_tiles_5 = [{'x': 3, 'y': 7}, {'x': 4, 'y': 6}, {'x': 4, 'y': 5}, {'x': 5, 'y': 5}]
+
+        self.assertEqual(('y', 1), get_orientation(positive_tiles_1))
+        self.assertEqual(('x', 1), get_orientation(positive_tiles_2))
+        self.assertEqual(('x', 1), get_orientation(positive_tiles_3))
+
+        self.assertEqual(None, get_orientation(nevative_tiles_1))
+        self.assertEqual(None, get_orientation(nevative_tiles_2))
+        self.assertEqual(None, get_orientation(nevative_tiles_3))
+        self.assertEqual(None, get_orientation(nevative_tiles_4))
+        self.assertEqual(None, get_orientation(nevative_tiles_5))
+
 
 if __name__ == '__main__':
     unittest.main()

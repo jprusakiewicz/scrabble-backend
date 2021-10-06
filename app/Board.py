@@ -107,7 +107,6 @@ class Board:
             self.fields.append(Field(tile["x"], tile["y"], tile["letter"]))
 
     def get_letter_score(self, letter: str):
-        print(self.letter_scores)
         return self.letter_scores[letter]
 
     def get_score(self, player_move):
@@ -135,3 +134,24 @@ class Board:
         for field in self.scored_fields:
             if field["x"] == x and field["y"] == y:
                 return field["score"]
+
+    def get_field(self, x, y) -> Field:
+        for field in self.fields:
+            if field.x == x and field.y == y:
+                return field
+
+    def get_letter(self, x, y) -> str:
+        for field in self.fields:
+            if field.x == x and field.y == y:
+                return field.letter
+
+    def is_in_board(self, tile):
+        f = Field(tile['x'], tile['y'], tile['letter'])
+        if f in self.fields:
+            return True
+        return False
+
+    def is_empty(self):
+        if len(self.fields) == 0:
+            return True
+        return False

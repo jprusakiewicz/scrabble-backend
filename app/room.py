@@ -24,15 +24,9 @@ class Room:
         self.whos_turn: str
         self.number_of_players = number_of_players
         self.game_id: str
-        self.timeout = self.get_timeout()
+        self.timeout = 85
         self.timer = threading.Timer(self.timeout, self.next_person_async)
 
-    def get_timeout(self):
-        try:
-            timeout = float(os.path.join(os.getenv('TIMEOUT_SECONDS')))
-        except TypeError:
-            timeout = 55  # if theres no env var
-        return timeout
 
     def next_person_async(self):
         asyncio.run(self.next_person_move())
@@ -81,7 +75,9 @@ class Room:
             await connection.ws.send_text(gs)
 
     async def restart_game(self):
+        self.put_all_players_out_of_game()
         self.export_score()
+        self.put_all_players_in_game()
         await self.start_game()
 
     async def start_game(self):
@@ -100,7 +96,6 @@ class Room:
         self.is_game_on = False
         self.whos_turn = 0
         self.game = None
-        self.put_all_players_out_of_game()
         await self.broadcast_json()
 
     async def restart_or_end_game(self):
@@ -117,8 +112,8 @@ class Room:
             if self.whos_turn == player.game_id:
                 await self.next_person_move()
             player.in_game = False
+            self.winners.append({'player_id': player.id, "score": self.game.get_score(player.game_id)})
             self.export_room_status()
-
             await self.broadcast_json()
 
     def get_players_in_game_ids(self) -> List[str]:
@@ -133,6 +128,7 @@ class Room:
             if self.whos_turn == player.game_id:
                 await self.next_person_move()
             player.in_game = False
+            self.winners.append({'player_id': player.id, "score": self.game.get_score(player.game_id)})
             self.export_room_status()
             print(f"kicked player {player.id}")
 
@@ -144,17 +140,20 @@ class Room:
 
     def put_all_players_out_of_game(self):
         for connection in self.active_connections:
+            self.winners.append(
+                {'player_id': connection.player.id, "score": self.game.get_score(connection.player.game_id)})
             connection.player.in_game = False
 
     async def handle_players_move(self, client_id, player_move):
         player = next(
             connection.player for connection in self.active_connections if connection.player.id == client_id)
+
         self.validate_its_players_turn(player.game_id)
 
         next_person_move = self.game.handle_players_move(player.game_id, player_move)
         if next_person_move:
             await self.next_person_move()
-            await self.check_and_handle_player_full_finnish(player)
+            await self.check_and_handle_finnish(player)
 
     async def next_person_move(self):
         self.restart_timer()
@@ -194,10 +193,12 @@ class Room:
                      "whos turn": self.whos_turn,
                      'number_of_players': self.number_of_players,
                      'results': self.game.players,
+                     'players': [self.get_players_in_game_regular_ids()],
                      "number_of_connected_players": len(self.active_connections)}
         else:
             stats = {'is_game_on': self.is_game_on,
                      'number_of_players': self.number_of_players,
+                     'players': [self.get_players_in_game_regular_ids()],
                      "number_of_connected_players": len(self.active_connections)}
         return stats
 
@@ -223,14 +224,9 @@ class Room:
     async def kick_player(self, player_id):
         await self.remove_player_by_id(player_id)
 
-    async def check_and_handle_player_full_finnish(self, player):
-        ...
-        # if len(self.game.finnish[player.game_id]) == 4:
-        #     print(f"player {player.id} has finished")
-        #     self.winners.append(player.id)
-        #     await self.remove_player_by_game_id(player.game_id)
-        #     if len(self.winners) == 4:
-        #         await self.restart_or_end_game()
+    async def check_and_handle_finnish(self, player):
+        if len(self.game.bag) == 0:
+            await self.restart_or_end_game()
 
     def export_score(self):
         try:
@@ -245,6 +241,7 @@ class Room:
             print("failed to get EXPORT_RESULT_URL env var")
 
     def export_room_status(self):
+        connectionsCount: int = len(self.active_connections)
         try:
             if self.is_game_on:
                 is_in_game = self.get_players_in_game_regular_ids()
@@ -256,7 +253,7 @@ class Room:
             print(dict(activePlayers=is_in_game))
             result = requests.post(
                 url=os.path.join(os.getenv('EXPORT_RESULTS_URL'), "rooms/update-room-status"),
-                json=dict(roomId=self.id, activePlayers=is_in_game))
+                json=dict(roomId=self.id, activePlayers=is_in_game, connectionsCount=connectionsCount))
 
             if result.status_code == 200:
                 print("export succesfull")
