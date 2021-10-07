@@ -6,52 +6,82 @@ from app.Board import Board
 r = Random()
 
 
-def get_new_letters():
+def get_new_letters(locale):
     letters = []
-    letters.extend(['A'] * 9)
-    letters.extend(['I'] * 8)
-    letters.extend(['E'] * 7)
-    letters.extend(['N'] * 5)
-    letters.extend(['O'] * 6)
-    letters.extend(['R'] * 4)
-    letters.extend(['S'] * 4)
-    letters.extend(['W'] * 4)
-    letters.extend(['Z'] * 5)
-    letters.extend(['C'] * 3)
-    letters.extend(['D'] * 3)
-    letters.extend(['K'] * 3)
-    letters.extend(['L'] * 3)
-    letters.extend(['M'] * 3)
-    letters.extend(['P'] * 3)
-    letters.extend(['T'] * 3)
-    letters.extend(['Y'] * 4)
-    letters.extend(['B'] * 2)
-    letters.extend(['G'] * 2)
-    letters.extend(['H'] * 2)
-    letters.extend(['J'] * 2)
-    letters.extend(['Ł'] * 2)
-    letters.extend(['U'] * 2)
-    letters.extend(['Ą'] * 1)
-    letters.extend(['Ę'] * 1)
-    letters.extend(['F'] * 1)
-    letters.extend(['Ó'] * 1)
-    letters.extend(['Ś'] * 1)
-    letters.extend(['Ż'] * 1)
-    letters.extend(['Ć'] * 1)
-    letters.extend(['Ń'] * 1)
-    letters.extend(['Ź'] * 1)
-    shuffle(letters)
 
+    if locale == 'pl':
+        letters.extend(['A'] * 9)
+        letters.extend(['I'] * 8)
+        letters.extend(['E'] * 7)
+        letters.extend(['N'] * 5)
+        letters.extend(['O'] * 6)
+        letters.extend(['R'] * 4)
+        letters.extend(['S'] * 4)
+        letters.extend(['W'] * 4)
+        letters.extend(['Z'] * 5)
+        letters.extend(['C'] * 3)
+        letters.extend(['D'] * 3)
+        letters.extend(['K'] * 3)
+        letters.extend(['L'] * 3)
+        letters.extend(['M'] * 3)
+        letters.extend(['P'] * 3)
+        letters.extend(['T'] * 3)
+        letters.extend(['Y'] * 4)
+        letters.extend(['B'] * 2)
+        letters.extend(['G'] * 2)
+        letters.extend(['H'] * 2)
+        letters.extend(['J'] * 2)
+        letters.extend(['Ł'] * 2)
+        letters.extend(['U'] * 2)
+        letters.extend(['Ą'] * 1)
+        letters.extend(['Ę'] * 1)
+        letters.extend(['F'] * 1)
+        letters.extend(['Ó'] * 1)
+        letters.extend(['Ś'] * 1)
+        letters.extend(['Ż'] * 1)
+        letters.extend(['Ć'] * 1)
+        letters.extend(['Ń'] * 1)
+        letters.extend(['Ź'] * 1)
+
+    elif locale == 'en':
+        letters.extend(['A'] * 9)
+        letters.extend(['I'] * 9)
+        letters.extend(['E'] * 12)
+        letters.extend(['N'] * 6)
+        letters.extend(['O'] * 8)
+        letters.extend(['R'] * 6)
+        letters.extend(['S'] * 4)
+        letters.extend(['W'] * 2)
+        letters.extend(['Z'] * 1)
+        letters.extend(['C'] * 2)
+        letters.extend(['D'] * 4)
+        letters.extend(['K'] * 1)
+        letters.extend(['L'] * 4)
+        letters.extend(['M'] * 2)
+        letters.extend(['P'] * 2)
+        letters.extend(['T'] * 6)
+        letters.extend(['Y'] * 2)
+        letters.extend(['B'] * 2)
+        letters.extend(['G'] * 3)
+        letters.extend(['H'] * 2)
+        letters.extend(['J'] * 1)
+        letters.extend(['U'] * 4)
+        letters.extend(['V'] * 2)
+        letters.extend(['F'] * 2)
+        letters.extend(['X'] * 1)
+        letters.extend(['Q'] * 1)
+
+    shuffle(letters)
     return letters
 
 
 class Game:
-    def __init__(self, number_of_players: int):
+    def __init__(self, number_of_players: int, locale: str):
         self.board: Board = Board()
-        self.bag: List[str] = get_new_letters()
+        self.bag: List[str] = get_new_letters(locale)
         self.players: dict = self.get_new_game_tiles(number_of_players)
         self.score = self.setup_score(number_of_players)
-        self.words = self.read_words()
+        self.words = self.read_words(locale)
 
     def get_new_game_tiles(self, number_of_players: int):
         players = {}
@@ -105,8 +135,12 @@ class Game:
             self.players[game_id].extend(self.get_new_tiles(tiles_to_get_number))
 
     def get_new_tiles(self, tiles_to_get_number):
-        tiles_to_get = self.bag[-tiles_to_get_number:]
-        self.bag = self.bag[:-tiles_to_get_number]
+        if len(self.bag) < tiles_to_get_number:
+            tiles_to_get = self.bag
+            self.bag = []
+        else:
+            tiles_to_get = self.bag[-tiles_to_get_number:]
+            self.bag = self.bag[:-tiles_to_get_number]
         return tiles_to_get
 
     def get_orientation(self, player_move):
@@ -142,7 +176,8 @@ class Game:
                             return True
             return False
 
-        except RecursionError:
+        except Exception as e:
+            print(e.__class__.__name__)
             return False
 
     def validate_continuum(self, player_move, orientation):
@@ -236,8 +271,14 @@ class Game:
         else:
             print(f"theres no {word} in words")
 
-    def read_words(self):
-        with open('slowa.txt') as f:
+    def read_words(self, locale: str):
+        path = ""
+        if locale == 'pl':
+            path = 'slowa.txt'
+        elif locale == 'en':
+            path = "words.txt"
+
+        with open(path) as f:
             words = f.read().split('\n')
         return words
 

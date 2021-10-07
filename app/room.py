@@ -15,7 +15,7 @@ from .server_errors import ItsNotYourTurn
 
 
 class Room:
-    def __init__(self, room_id, number_of_players=2):
+    def __init__(self, room_id, locale: str = 'pl', number_of_players=2):
         self.winners = []  # !use normal id!
         self.id = room_id
         self.active_connections: List[Connection] = []
@@ -25,8 +25,8 @@ class Room:
         self.number_of_players = number_of_players
         self.game_id: str
         self.timeout = 85
+        self.locale = locale
         self.timer = threading.Timer(self.timeout, self.next_person_async)
-
 
     def next_person_async(self):
         asyncio.run(self.next_person_move())
@@ -89,7 +89,7 @@ class Room:
         self.winners = []
         self.whos_turn = self.draw_random_player_id()
         self.put_all_players_in_game()
-        self.game = Game(len(self.get_players_in_game_ids()))
+        self.game = Game(len(self.get_players_in_game_ids()), self.locale)
         self.game_id = str(uuid.uuid4().hex)
         self.restart_timer()
         await self.broadcast_json()
@@ -196,12 +196,14 @@ class Room:
             stats = {'is_game_on': self.is_game_on,
                      "whos turn": self.whos_turn,
                      'number_of_players': self.number_of_players,
+                     'locale': self.locale,
                      'results': self.game.players,
                      'players_ids': [self.get_players_regular_ids()],
                      "number_of_connected_players": len(self.active_connections)}
         else:
             stats = {'is_game_on': self.is_game_on,
                      'number_of_players': self.number_of_players,
+                     'locale': self.locale,
                      'players_ids': [self.get_players_regular_ids()],
                      "number_of_connected_players": len(self.active_connections)}
         return stats
@@ -230,6 +232,7 @@ class Room:
 
     async def check_and_handle_finnish(self, player):
         if len(self.game.bag) == 0:
+            print("bag is empty")
             await self.restart_or_end_game()
 
     def export_score(self):

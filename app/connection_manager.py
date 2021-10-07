@@ -105,11 +105,11 @@ class ConnectionManager:
         return {'rooms_count': len(self.rooms),
                 'rooms_ids': [r.id for r in self.rooms]}
 
-    async def create_new_room(self, room_id, number_of_players: int = 4):
+    async def create_new_room(self, room_id, locale: str = 'pl', number_of_players: int = 4):
         if number_of_players > 4:
             raise ToManyPlayers
         if room_id not in [room.id for room in self.rooms]:
-            self.rooms.append(Room(room_id=room_id, number_of_players=number_of_players))
+            self.rooms.append(Room(room_id=room_id, locale=locale, number_of_players=number_of_players))
         else:
             raise RoomIdAlreadyInUse
 

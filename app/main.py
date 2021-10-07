@@ -50,10 +50,10 @@ async def new_room(room_id: str):
         )
 
 
-@app.post("/room/new/{room_id}/{number_players}")
-async def new_room(room_id: str, number_players: int):
+@app.post("/room/new/{room_id}/{number_players}/{locale}")
+async def new_room(room_id: str, number_players: int, locale: str = 'pl'):
     try:
-        await manager.create_new_room(room_id, number_players)
+        await manager.create_new_room(room_id, locale, number_players)
         return JSONResponse(
             status_code=200,
             content={"detail": "success"}
