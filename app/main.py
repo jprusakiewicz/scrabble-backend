@@ -9,6 +9,7 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK
 
 from app.connection_manager import ConnectionManager
+from app.game import read_words
 from app.server_errors import NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers, PlayerIdAlreadyInUse, GameIsStarted
 
 app = FastAPI()
@@ -19,6 +20,12 @@ manager = ConnectionManager()
 @app.get("/")
 async def get():
     return {"status": "ok"}
+
+
+@app.get("/words/{locale}/{words_number}")
+async def get(locale: str, words_number: int):
+    w = read_words(locale)
+    return {"locale": w[:words_number]}
 
 
 @app.get("/stats")
