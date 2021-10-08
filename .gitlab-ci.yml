@@ -1,3 +1,8 @@
+stages:
+    - build
+    - deploy
+    - cleanup
+
 build-development:
     image: docker:19.03.13
     stage: build
@@ -17,5 +22,15 @@ deploy-development:
     stage: deploy
     script:
         - kubectl rollout restart deployment game-scrabble-backend-dev --namespace=capgemini
+    only:
+        - main
+
+cleanup-development:
+    image: ubuntu
+    stage: cleanup
+    script:
+        - apt-get update && apt-get install -y curl
+        - curl -v -X POST https://backend-dev.capgemini.enl-projects.com/rooms/sync-rooms-in-game-backend/scrabble
+        - sleep 2
     only:
         - main
