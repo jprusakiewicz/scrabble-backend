@@ -78,9 +78,9 @@ def get_new_letters(locale):
 def read_words(locale: str):
     path = ""
     if locale == 'pl':
-        path = 'clues/slowa.txt'
+        path = './clues/slowa.txt'
     elif locale == 'en':
-        path = "clues/words.txt"
+        path = "./clues/words.txt"
 
     with open(path) as f:
         words = f.read().split('\n')
