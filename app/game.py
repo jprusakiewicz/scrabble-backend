@@ -75,13 +75,25 @@ def get_new_letters(locale):
     return letters
 
 
+def read_words(locale: str):
+    path = ""
+    if locale == 'pl':
+        path = 'clues/slowa.txt'
+    elif locale == 'en':
+        path = "clues/words.txt"
+
+    with open(path) as f:
+        words = f.read().split('\n')
+    return words
+
+
 class Game:
     def __init__(self, number_of_players: int, locale: str):
         self.board: Board = Board()
         self.bag: List[str] = get_new_letters(locale)
         self.players: dict = self.get_new_game_tiles(number_of_players)
         self.score = self.setup_score(number_of_players)
-        self.words = self.read_words(locale)
+        self.words = read_words(locale)
 
     def get_new_game_tiles(self, number_of_players: int):
         players = {}
@@ -270,17 +282,6 @@ class Game:
             return True
         else:
             print(f"theres no {word} in words")
-
-    def read_words(self, locale: str):
-        path = ""
-        if locale == 'pl':
-            path = 'slowa.txt'
-        elif locale == 'en':
-            path = "words.txt"
-
-        with open(path) as f:
-            words = f.read().split('\n')
-        return words
 
     def is_first_or_last_on_center(self, player_move):
         for tile in player_move:

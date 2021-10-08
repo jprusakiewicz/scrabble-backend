@@ -9,7 +9,7 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK
 
 from app.connection_manager import ConnectionManager
-from app.server_errors import GameIsStarted, PlayerIdAlreadyInUse, NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers
+from app.server_errors import NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers, PlayerIdAlreadyInUse, GameIsStarted
 
 app = FastAPI()
 
