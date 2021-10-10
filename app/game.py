@@ -2,6 +2,7 @@ from random import Random, shuffle
 from typing import List, Union
 
 from app.Board import Board
+from words import words_manager
 
 r = Random()
 
@@ -79,14 +80,13 @@ def read_words(locale: str):
     path = ""
     try:
         if locale == 'pl':
-            path = './clues/slowa.txt'
+            path = 'words/slowa.txt'
         elif locale == 'en':
-            path = "./clues/words.txt"
+            path = "words/words.txt"
         with open(path) as f:
             words = f.read().split('\n')
     except FileNotFoundError as e:
         print("File not found!")
-        words = 'aaa \nbbb'
     return words
 
 
@@ -96,7 +96,7 @@ class Game:
         self.bag: List[str] = get_new_letters(locale)
         self.players: dict = self.get_new_game_tiles(number_of_players)
         self.score = self.setup_score(number_of_players)
-        self.words = read_words(locale)
+        self.locale = locale
 
     def get_new_game_tiles(self, number_of_players: int):
         players = {}
@@ -281,10 +281,7 @@ class Game:
 
     def validate_word(self, player_move):
         word = "".join([w["letter"] for w in player_move]).lower()
-        if word in self.words:
-            return True
-        else:
-            print(f"theres no {word} in words")
+        return words_manager.check_word(word, self.locale)
 
     def is_first_or_last_on_center(self, player_move):
         for tile in player_move:

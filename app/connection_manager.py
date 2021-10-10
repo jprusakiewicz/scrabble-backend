@@ -29,10 +29,13 @@ class ConnectionManager:
     async def end_game(self, room_id: str):
         room = self.get_room(room_id)
         await room.end_game()
+        await room.broadcast_json()
+
 
     async def end_all_games(self):
         for room in self.rooms:
             await room.end_game()
+            await room.broadcast_json()
 
     async def connect(self, websocket: WebSocket, room_id: str, client_id: str, nick: str):
         self.validate_client_id(room_id, client_id)
@@ -75,12 +78,13 @@ class ConnectionManager:
             print(message)
             players_move = json.loads(message["text"])
             room = self.get_room(room_id)
-            await room.handle_players_move(client_id, players_move)
-            await self.broadcast(room_id)
+            if room.is_in_game(client_id):
+                await room.handle_players_move(client_id, players_move)
+                await self.broadcast(room_id)
 
-        # except KeyError:
-        #     print("handle message")
-        #     pass
+        except KeyError:
+            print("handle message")
+            pass
         except ItsNotYourTurn as e:
             # send message to this player
             print(e)

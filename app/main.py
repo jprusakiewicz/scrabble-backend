@@ -11,6 +11,7 @@ from websockets.exceptions import ConnectionClosedOK
 from app.connection_manager import ConnectionManager
 from app.game import read_words
 from app.server_errors import NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers, PlayerIdAlreadyInUse, GameIsStarted
+from app.words import words_manager
 
 app = FastAPI()
 
@@ -24,6 +25,11 @@ async def get():
 
 @app.get("/words/{locale}/{words_number}")
 async def get(locale: str, words_number: int):
+    if not words_manager.is_locale_supported(locale):
+        return JSONResponse(
+            status_code=403,
+            content={"detail": f"locale not supported: {locale}"}
+        )
     w = read_words(locale)
     return {"locale": w[:words_number]}
 
@@ -60,6 +66,11 @@ async def new_room(room_id: str):
 @app.post("/room/new/{room_id}/{number_players}/{locale}")
 async def new_room(room_id: str, number_players: int, locale: str = 'pl'):
     try:
+        if not words_manager.is_locale_supported(locale):
+            return JSONResponse(
+                status_code=406,
+                content={"detail": f"locale not supported: {locale}"}
+            )
         await manager.create_new_room(room_id, locale, number_players)
         return JSONResponse(
             status_code=200,

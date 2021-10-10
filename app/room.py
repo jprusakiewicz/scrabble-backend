@@ -67,11 +67,11 @@ class Room:
         return players
 
     async def remove_connection(self, connection_with_given_ws):
-        await self.remove_player_by_id(connection_with_given_ws.player.id)
+        await self.handle_player_remove(connection_with_given_ws.player.id)
         self.active_connections.remove(connection_with_given_ws)
-        self.export_room_status()
         if len(self.get_players_in_game_game_ids()) <= 1 and self.is_game_on is True:
             await self.end_game()
+            await self.broadcast_json()
 
     async def broadcast_json(self):
         for connection in self.active_connections:
@@ -100,32 +100,32 @@ class Room:
         self.is_game_on = False
         self.whos_turn = 0
         self.game = None
-        await self.broadcast_json()
 
     async def restart_or_end_game(self):
         if len(self.active_connections) >= self.number_of_players:
             await self.restart_game()
         else:
             await self.end_game()
-
-    async def remove_player_by_game_id(self, game_id):
-        player = next(
-            connection.player for connection in self.active_connections if connection.player.game_id == game_id)
-        if self.game:
-            # self.game.remove_players_counters_from_regular_and_idle_fields(player.game_id)
-            if self.whos_turn == player.game_id:
-                await self.next_person_move()
-            player.in_game = False
-            self.winners.append({'player_id': player.id, "score": self.game.get_score(player.game_id)})
-            self.export_room_status()
             await self.broadcast_json()
+
+    # async def remove_player_by_game_id(self, game_id):
+    #     player = next(
+    #         connection.player for connection in self.active_connections if connection.player.game_id == game_id)
+    #     if self.game:
+    #         # self.game.remove_players_counters_from_regular_and_idle_fields(player.game_id)
+    #         if self.whos_turn == player.game_id:
+    #             await self.next_person_move()
+    #         player.in_game = False
+    #         self.winners.append({'player_id': player.id, "score": self.game.get_score(player.game_id)})
+    #         self.export_room_status()
+    #         await self.broadcast_json()
 
     def get_players_in_game_ids(self) -> List[str]:
         taken_ids = [connection.player.game_id for connection in self.active_connections if
                      connection.player.in_game == True]
         return taken_ids
 
-    async def remove_player_by_id(self, id):
+    async def handle_player_remove(self, id):
         player = next(
             connection.player for connection in self.active_connections if connection.player.id == id)
         if self.game is not None:
@@ -176,11 +176,18 @@ class Room:
         if self.is_game_on:
             player = next(
                 connection.player for connection in self.active_connections if connection.player.id == client_id)
-            game_state = dict(is_game_on=self.is_game_on,
-                              # turn_id=self.game.turn_id,
-                              board=self.game.get_board(), nicks=self.get_nicks(),
-                              player_hand=self.game.get_player_hand(player.game_id),
-                              timestamp=self.timestamp.isoformat(), is_my_turn=self.is_my_turn(player.game_id))
+            if player.in_game:
+                game_state = dict(is_game_on=self.is_game_on,
+                                  # turn_id=self.game.turn_id,
+                                  board=self.game.get_board(), nicks=self.get_nicks(),
+                                  player_hand=self.game.get_player_hand(player.game_id),
+                                  timestamp=self.timestamp.isoformat(), is_my_turn=self.is_my_turn(player.game_id))
+            else:
+                game_state = dict(is_game_on=self.is_game_on,
+                                  board=self.game.get_board(),
+                                  nicks=self.get_nicks(),
+                                  timestamp=self.timestamp.isoformat(),
+                                  is_my_turn=False)
         else:
             game_state = dict(is_game_on=self.is_game_on, nicks=self.get_nicks())
 
@@ -228,7 +235,7 @@ class Room:
             raise ItsNotYourTurn
 
     async def kick_player(self, player_id):
-        await self.remove_player_by_id(player_id)
+        await self.handle_player_remove(player_id)
 
     async def check_and_handle_finnish(self, player):
         if len(self.game.bag) == 0:
@@ -270,6 +277,12 @@ class Room:
         except Exception as e:
             print(e.__class__.__name__)
             print("failed to get EXPORT_RESULTS_URL env var")
+
+    def is_in_game(self, client_id):
+        player = next(
+            connection.player for connection in self.active_connections if connection.player.id == client_id)
+        if player.in_game:
+            return True
 
     def restart_timer(self):
         self.timer.cancel()
