@@ -163,8 +163,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: str,
                 await manager.handle_ws_message(message, room_id, client_id)
 
         except RuntimeError as e:
-            logging.info(e.__class__.__name__)
-            logging.info(e)
+            try:
+                if message['code'] == 1006 or message['code'] == 1001:  # 'websocket.disconnect'
+                    await manager.disconnect(websocket)
+            except Exception as e:
+                pass
+                logging.info(e.__class__.__name__)
+                logging.info(e)
 
         except Exception as e:
             logging.info(e)

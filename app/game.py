@@ -136,7 +136,11 @@ class Game:
         return {str(n + 1): 0 for n in range(number_of_players)}
 
     def get_score(self, game_id):
-        return self.score[game_id]
+        try:
+            score = self.score[game_id]
+        except KeyError:
+            score = 0
+        return score
 
     def handle_players_hand(self, game_id, player_move):
         for tile in player_move:
