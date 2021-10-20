@@ -111,7 +111,8 @@ class Game:
                 pass
             elif player_move['other'] == "skip":
                 letter = player_move['letter']
-                self.replace_letter(game_id, letter)
+                if letter != "":
+                    self.replace_letter(game_id, letter)
                 return True
             return False
         else:
