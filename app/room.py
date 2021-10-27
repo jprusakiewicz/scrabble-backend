@@ -132,7 +132,7 @@ class Room:
             if self.whos_turn == player.game_id:
                 await self.next_person_move()
             player.in_game = False
-            self.winners.append({'player_id': player.id, "score": self.game.get_score(player.game_id)})
+            self.winners.append({'playerId': player.id, "score": self.game.get_score(player.game_id)})
             self.export_room_status()
             print(f"kicked player {player.id}")
 
@@ -145,7 +145,7 @@ class Room:
     def put_all_players_out_of_game(self):
         for connection in self.active_connections:
             self.winners.append(
-                {'player_id': connection.player.id, "score": self.game.get_score(connection.player.game_id)})
+                {'playerId': connection.player.id, "score": self.game.get_score(connection.player.game_id)})
             connection.player.in_game = False
 
     async def handle_players_move(self, client_id, player_move):
