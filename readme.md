@@ -16,8 +16,8 @@ For documentation go to `/docs` address
 
 ## Exporting game results
 
-[comment]: <> (Service exports a _**list**_ of players _ids_ in descending order &#40;Player who won has index 0&#41;)
+Service exports a _**list**_ of players ids and their points
 
-[comment]: <> (i.e. `[17,64,9,24]`)
+i.e. `[{'player_id': 'pl4y3rid', "score": 350}]`
 
-Address for export must be provided as docker variable (not implemented yet)
+
