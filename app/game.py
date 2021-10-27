@@ -44,7 +44,7 @@ def get_new_letters(locale):
         letters.extend(['Ń'] * 1)
         letters.extend(['Ź'] * 1)
 
-    elif locale == 'en':
+    else:
         letters.extend(['A'] * 9)
         letters.extend(['I'] * 9)
         letters.extend(['E'] * 12)
@@ -74,20 +74,6 @@ def get_new_letters(locale):
 
     shuffle(letters)
     return letters
-
-
-def read_words(locale: str):
-    path = ""
-    try:
-        if locale == 'pl':
-            path = 'words/slowa.txt'
-        elif locale == 'en':
-            path = "words/words.txt"
-        with open(path) as f:
-            words = f.read().split('\n')
-    except FileNotFoundError as e:
-        print("File not found!")
-    return words
 
 
 class Game:

@@ -9,7 +9,6 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK
 
 from app.connection_manager import ConnectionManager
-from app.game import read_words
 from app.server_errors import NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers, PlayerIdAlreadyInUse, GameIsStarted
 from app.words import words_manager
 
@@ -30,7 +29,7 @@ async def get(locale: str, words_number: int):
             status_code=403,
             content={"detail": f"locale not supported: {locale}"}
         )
-    w = read_words(locale)
+    w = words_manager.read_words(locale)
     return {"locale": w[:words_number]}
 
 
@@ -171,12 +170,12 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: str,
                 logging.info(e.__class__.__name__)
                 logging.info(e)
 
-        # except Exception as e:
-        #     logging.info(e)
-        #     logging.info(e.__class__.__name__)
-        #     logging.info("disconnected")
-        #     await manager.disconnect(websocket)
-        #     await manager.broadcast(room_id)
+        except Exception as e:
+            logging.info(e)
+            logging.info(e.__class__.__name__)
+            logging.info("disconnected")
+            await manager.disconnect(websocket)
+            await manager.broadcast(room_id)
 
     except GameIsStarted:
         logging.info(f"Theres already game started")
@@ -194,10 +193,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, client_id: str,
         await manager.kick_player(room_id, client_id)
         logging.info(f"ConnectionClosedOK {client_id}")
         await manager.broadcast(room_id)
-    #
-    # except Exception as e:
-    #     logging.info(e)
-    #     logging.info("disconnected!")
+
+    except Exception as e:
+        logging.info(e)
+        logging.info("disconnected!")
 
 
 @app.websocket("/test/{room_id}/{client_id}/{nick}")

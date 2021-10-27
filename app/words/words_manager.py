@@ -10,7 +10,7 @@ class SingletonMeta(type):
 
 class WordsManager(metaclass=SingletonMeta):
     def __init__(self):
-        self.supported_locales = ['pl', 'en']
+        self.supported_locales = ['pl', 'en', 'de', 'es', 'fr', 'it']
         self.words = self.load_words()
 
     def load_words(self):
@@ -23,14 +23,21 @@ class WordsManager(metaclass=SingletonMeta):
         return words
 
     def read_words(self, locale: str):
+
         print(f"reading locale: {locale}")
         path = ""
         if locale == 'pl':
             path = '../app/words/slowa.txt'
         elif locale == 'en':
             path = "../app/words/words.txt"
-        # elif locale == '...':
-        #     path = "... .txt"
+        elif locale == 'de':
+            path = "../app/words/deutsch.txt"
+        elif locale == 'it':
+            path = "../app/words/italian.txt"
+        elif locale == 'fr':
+            path = "../app/words/french.txt"
+        elif locale == 'es':
+            path = "../app/words/spanish.txt"
 
         with open(path) as f:
             words = f.read().split('\n')
@@ -49,4 +56,3 @@ class WordsManager(metaclass=SingletonMeta):
 
 
 words_manager = WordsManager()
-
