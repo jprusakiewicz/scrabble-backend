@@ -18,7 +18,7 @@ For documentation go to `/docs` address
 
 Service exports a _**list**_ of players ids and their points
 
-i.e. `{"room_id":"123", "results":
-[{"player_id": "pl4y3rid", "score": 350}, {"player_id": "2pl4y3rid2", "score": 429}]}`
+i.e. `{"roomId":"123", "results":
+[{"playerId": "pl4y3rid", "score": 350}, {"playerId": "2pl4y3rid2", "score": 429}]}`
 
 
