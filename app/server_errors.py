@@ -18,6 +18,11 @@ class NoRoomWithThisId(WsServerError):
         self.message = 'Theres no room with this id'
 
 
+class NoPlayerWithThisId(WsServerError):
+    def __init__(self):
+        self.message = 'Theres no player with this id'
+
+
 class RoomIdAlreadyInUse(WsServerError):
     def __init__(self):
         self.message = 'Theres already room with this id'

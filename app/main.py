@@ -9,7 +9,8 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.exceptions import ConnectionClosedOK
 
 from app.connection_manager import ConnectionManager
-from app.server_errors import NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers, PlayerIdAlreadyInUse, GameIsStarted
+from app.server_errors import NoRoomWithThisId, RoomIdAlreadyInUse, ToManyPlayers, PlayerIdAlreadyInUse, GameIsStarted, \
+    NoPlayerWithThisId
 from app.words import words_manager
 
 app = FastAPI()
@@ -142,7 +143,18 @@ async def restart_game(room_id: str):
 
 @app.post("/game/kick_player/{room_id}/{player_id}")
 async def kick_player(room_id: str, player_id: str):
-    await manager.kick_player(room_id, player_id)
+    try:
+        await manager.kick_player(room_id, player_id)
+    except NoRoomWithThisId:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": f"No room with this id: {room_id}"}
+        )
+    except NoPlayerWithThisId:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": f"No player with this id: {room_id}"}
+        )
     return JSONResponse(
         status_code=200,
         content={"detail": "success"}

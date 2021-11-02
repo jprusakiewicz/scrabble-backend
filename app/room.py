@@ -11,7 +11,7 @@ import requests
 
 from .connection import Connection
 from .game import Game
-from .server_errors import ItsNotYourTurn
+from .server_errors import ItsNotYourTurn, NoPlayerWithThisId
 
 
 class Room:
@@ -126,8 +126,11 @@ class Room:
         return taken_ids
 
     async def handle_player_remove(self, id):
-        player = next(
-            connection.player for connection in self.active_connections if connection.player.id == id)
+        try:
+            player = next(
+                connection.player for connection in self.active_connections if connection.player.id == id)
+        except StopIteration:
+            raise NoPlayerWithThisId
         if self.game is not None:
             if self.whos_turn == player.game_id:
                 await self.next_person_move()
@@ -236,6 +239,15 @@ class Room:
 
     async def kick_player(self, player_id):
         await self.handle_player_remove(player_id)
+        await self.remove_player_by_id(player_id)
+
+    async def remove_player_by_id(self, id):
+        try:
+            connection = next(
+                connection for connection in self.active_connections if connection.player.id == id)
+        except StopIteration:
+            raise NoPlayerWithThisId
+        await self.remove_connection(connection)
 
     async def check_and_handle_finnish(self, player):
         if len(self.game.bag) == 0:
