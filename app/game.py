@@ -141,6 +141,7 @@ class Game:
             self.players[game_id].extend(self.get_new_tiles(tiles_to_get_number))
 
     def get_new_tiles(self, tiles_to_get_number):
+        shuffle(self.bag)
         if len(self.bag) < tiles_to_get_number:
             tiles_to_get = self.bag
             self.bag = []
