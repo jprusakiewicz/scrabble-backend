@@ -155,3 +155,6 @@ class Board:
         if len(self.fields) == 0:
             return True
         return False
+
+    def number_of_fields_on_board(self) -> int:
+        return len(self.fields)

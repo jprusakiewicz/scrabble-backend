@@ -112,8 +112,10 @@ class Game:
         return self.players[game_id]
 
     def handle_player_tiles(self, game_id, player_move):
-        if self.validate_move(game_id, player_move):
-            self.board.add_tiles(player_move)
+        player_move_copy = player_move.copy()
+
+        if self.validate_move(player_move):
+            self.board.add_tiles(player_move_copy)
             self.score[game_id] += self.board.get_score(player_move)
             self.handle_players_hand(game_id, player_move)
             return True
@@ -152,9 +154,12 @@ class Game:
 
     def get_orientation(self, player_move):
         if len(player_move) == 1:
-            surroundings = self.get_surroundings(player_move['x'], player_move['y'])
+            the_only_tile = player_move[0]
+            surroundings = self.get_surroundings(the_only_tile['x'], the_only_tile['y'])
             if len(surroundings) == 1:
-                player_move.extend(surroundings)
+                field = surroundings[0]
+                del field['ExtraScore']
+                player_move.append(field)
             else:
                 return None
 
@@ -168,7 +173,7 @@ class Game:
         else:
             return None
 
-    def validate_move(self, game_id, player_move):
+    def validate_move(self, player_move):
         try:
             if self.board.is_empty():
                 if not self.is_first_or_last_on_center(player_move):
@@ -247,7 +252,7 @@ class Game:
         if any(surroundings):
             return surroundings[0]
 
-    def append_extreme_top_tiles(self, player_move, orientation):
+    def append_extreme_head_tiles(self, player_move, orientation):
         player_move.sort(key=lambda l: l[orientation])
         first_tile = player_move[0]
 
@@ -255,9 +260,9 @@ class Game:
         if new is not None and {"x": new.x, "y": new.y, "letter": new.letter} not in player_move:
             player_move.append({"x": new.x, "y": new.y, "letter": new.letter})
             player_move.sort(key=lambda l: l[orientation])
-            self.append_extreme_top_tiles(player_move, orientation)
+            self.append_extreme_head_tiles(player_move, orientation)
 
-    def append_extreme_bottom_tiles(self, player_move, orientation):
+    def append_extreme_tail_tiles(self, player_move, orientation):
         player_move.sort(key=lambda l: l[orientation])
         last = player_move[-1]
 
@@ -265,11 +270,11 @@ class Game:
         if new is not None and {"x": new.x, "y": new.y, "letter": new.letter} not in player_move:
             player_move.append({"x": new.x, "y": new.y, "letter": new.letter})
             player_move.sort(key=lambda l: l[orientation])
-            self.append_extreme_top_tiles(player_move, orientation)
+            self.append_extreme_head_tiles(player_move, orientation)
 
     def append_extreme_tiles(self, player_move, orientation):
-        self.append_extreme_top_tiles(player_move, orientation)
-        self.append_extreme_bottom_tiles(player_move, orientation)
+        self.append_extreme_head_tiles(player_move, orientation)
+        self.append_extreme_tail_tiles(player_move, orientation)
 
     def validate_word(self, player_move):
         word = "".join([w["letter"] for w in player_move]).lower()
