@@ -281,6 +281,7 @@ class Game:
         return False
 
     def replace_letter(self, game_id, letter):
+        shuffle(self.bag)
         idx = self.players[game_id].index(letter)
         self.players[game_id][idx] = self.bag[-1]
         self.bag[-1] = letter
