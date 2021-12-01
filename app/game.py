@@ -93,14 +93,15 @@ class Game:
 
     def handle_players_move(self, game_id, player_move: Union[dict, List[dict]]) -> bool:
         if 'other' in player_move:
-            if player_move['other'] == "refresh":
-                pass
-            elif player_move['other'] == "skip":
+            if player_move['other'] == "skip":
+                return True
+            elif player_move['other'] == "replace":
                 letter = player_move['letter']
                 if letter != "":
                     self.replace_letter(game_id, letter)
-                return True
-            return False
+                    return True
+                else:
+                    return False
         else:
             next_player = self.handle_player_tiles(game_id, player_move)
             return next_player
