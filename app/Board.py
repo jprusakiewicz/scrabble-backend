@@ -128,6 +128,9 @@ class Board:
             score *= 2
         if ScoreOperation.TripleWord in word_operations:
             score *= 3
+
+        if len(player_move) == 7:
+            score += 30
         return score
 
     def get_score_operations(self, x, y):
