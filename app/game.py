@@ -159,7 +159,10 @@ class Game:
             surroundings = self.get_surroundings(the_only_tile['x'], the_only_tile['y'])
             if len(surroundings) == 1:
                 field = surroundings[0]
-                del field['ExtraScore']
+                try:
+                    del field['ExtraScore']
+                except KeyError:
+                    pass
                 player_move.append(field)
             else:
                 return None
